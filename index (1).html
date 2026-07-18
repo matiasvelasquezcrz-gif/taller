@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#1C1E22" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Taller Velasquez</title>
+<link rel="manifest" href="manifest.json" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --graphite:#1C1E22; --paper:#EEEAE1; --yellow:#DC2626; --orange:#991B1B;
+    --teal:#1F6F78; --ink:#1C1E22; --muted:#8A8F98; --white:#ffffff;
+    --green:#16A34A; --blue:#2563EB;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);}
+  .display{font-family:'Oswald',sans-serif;letter-spacing:.02em;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  button{cursor:pointer;font-family:inherit;}
+  input,select,textarea{font-family:inherit;}
+
+  #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--graphite);}
+  .login-box{background:var(--paper);padding:36px;border-radius:10px;width:320px;}
+  .login-box h1{margin:0 0 4px;font-size:24px;}
+  .login-box p{color:var(--muted);font-size:13px;margin:0 0 20px;}
+  .login-box input{width:100%;padding:10px 12px;margin-bottom:10px;border:none;border-radius:6px;background:white;font-size:14px;}
+  .login-box button{width:100%;padding:11px;border:none;border-radius:6px;background:var(--yellow);color:white;font-weight:600;font-size:14px;}
+  .login-error{color:var(--orange);font-size:12px;margin-top:8px;}
+
+  #app{display:none;min-height:100vh;}
+  .layout{display:flex;min-height:100vh;}
+  aside{width:220px;background:var(--graphite);flex-shrink:0;display:flex;flex-direction:column;}
+  aside .logo{padding:24px 20px;border-bottom:1px solid rgba(255,255,255,.1);color:white;font-size:18px;display:flex;align-items:center;gap:8px;}
+  aside .logo span{color:var(--yellow);}
+  nav{padding:16px 10px;display:flex;flex-direction:column;gap:4px;flex:1;}
+  nav button{background:none;border:none;color:#C6CAD1;text-align:left;padding:10px 12px;border-radius:6px;font-size:14px;}
+  nav button.active{background:rgba(220,38,38,.15);color:var(--yellow);}
+  .logout{padding:16px;border-top:1px solid rgba(255,255,255,.1);}
+  .logout button{background:none;border:none;color:var(--muted);font-size:12px;padding:0;}
+
+  main{flex:1;padding:32px 40px;overflow-y:auto;}
+  header.page-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:24px;}
+  header.page-head h1{margin:0;font-size:28px;}
+  header.page-head p{margin:4px 0 0;color:var(--muted);font-size:13px;}
+  .btn-primary{background:var(--yellow);color:white;border:none;padding:10px 16px;border-radius:6px;font-weight:600;font-size:13px;}
+  .search-input{padding:9px 12px;border:none;border-radius:6px;font-size:13px;width:220px;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;}
+  .orden-card{position:relative;background:white;border-radius:10px;padding:20px 20px 20px 34px;box-shadow:0 1px 3px rgba(0,0,0,.08);text-align:left;border:none;}
+  .orden-card .hole{position:absolute;top:14px;left:14px;width:12px;height:12px;border-radius:50%;background:var(--graphite);}
+  .orden-card .top-row{display:flex;justify-content:space-between;align-items:center;}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:20px;}
+  .orden-card h3{margin:10px 0 0;font-size:17px;}
+  .orden-card .placa{color:var(--muted);font-size:12px;}
+  .orden-card .problema{margin-top:10px;padding-top:10px;border-top:1px dashed #ddd;font-size:13px;}
+  .orden-card .bottom-row{display:flex;justify-content:space-between;margin-top:12px;font-size:12px;color:var(--muted);}
+  .orden-card .dias{font-size:11px;color:var(--orange);font-weight:600;margin-top:4px;}
+
+  .cliente-card{background:white;border-radius:10px;padding:18px 20px;margin-bottom:14px;max-width:640px;}
+  .cliente-card .row{display:flex;justify-content:space-between;align-items:flex-start;}
+  .editable-name{font-family:'Oswald',sans-serif;font-size:17px;border:none;background:transparent;border-bottom:2px solid transparent;padding:2px 0;width:100%;}
+  .editable-name:focus{outline:none;border-bottom:2px solid var(--yellow);}
+  .veh-row{display:flex;gap:10px;align-items:center;background:var(--paper);padding:8px 12px;border-radius:6px;margin-top:8px;font-size:13px;}
+  .veh-row .placa-tag{margin-left:auto;background:var(--graphite);color:var(--yellow);padding:2px 8px;border-radius:4px;font-size:11px;}
+
+  .inv-table{background:white;border-radius:10px;overflow:hidden;max-width:640px;}
+  .inv-row{display:flex;align-items:center;gap:14px;padding:14px 18px;border-top:1px solid #eee;}
+  .inv-row:first-child{border-top:none;}
+  .inv-row .nombre{flex:1;font-size:14px;}
+  .inv-row .minimo{font-size:11px;color:var(--muted);}
+  .inv-row input.cantidad{width:60px;text-align:right;border:none;background:var(--paper);border-radius:5px;padding:5px 8px;font-family:'Oswald',sans-serif;font-size:15px;}
+
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:16px;z-index:50;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--paper);border-radius:10px;padding:26px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .modal-head h2{margin:0;font-size:20px;}
+  .modal-head button{background:none;border:none;font-size:18px;color:var(--muted);}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:600;}
+  .field input,.field select,.field textarea{width:100%;padding:9px 12px;border:none;border-radius:6px;background:white;font-size:14px;}
+  .field textarea{resize:none;}
+  .photo-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .photo-thumb{width:64px;height:64px;border-radius:6px;object-fit:cover;}
+  .photo-add{width:64px;height:64px;border:2px dashed var(--muted);border-radius:6px;background:none;color:var(--muted);}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .modal-actions button{flex:1;padding:11px;border:none;border-radius:6px;font-size:14px;}
+  .btn-cancel{background:white;color:var(--ink);}
+  .btn-confirm{background:var(--yellow);color:white;font-weight:600;font-family:'Oswald',sans-serif;}
+  .empty{text-align:center;padding:60px 0;color:var(--muted);font-size:14px;}
+
+  .factura{background:white;padding:24px;max-width:320px;margin:0 auto;font-size:12px;font-family:'JetBrains Mono',monospace;border:1px dashed #ccc;}
+  .factura .linea{border-top:1px dashed #ccc;margin:8px 0;}
+  .factura h2{text-align:center;font-family:'Oswald',sans-serif;font-size:18px;margin:0 0 4px;}
+  .factura .sub{text-align:center;color:var(--muted);font-size:11px;margin:0 0 12px;}
+  .factura .row{display:flex;justify-content:space-between;margin:4px 0;}
+  .factura .row b{font-weight:600;}
+  .factura .total{text-align:center;font-size:16px;font-weight:700;margin:12px 0 4px;border-top:2px dashed #000;padding-top:8px;}
+
+  .dash{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
+  .dash-card{background:white;border-radius:10px;padding:20px;text-align:center;}
+  .dash-card .num{font-family:'Oswald',sans-serif;font-size:36px;color:var(--yellow);line-height:1;}
+  .dash-card .label{font-size:12px;color:var(--muted);margin-top:6px;}
+  .dash-full{grid-column:1/-1;}
+
+  .offline-badge{position:fixed;bottom:16px;right:16px;background:var(--orange);color:white;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;z-index:100;display:none;}
+  .offline-badge.show{display:block;}
+
+  @media(max-width:768px){
+    .layout{flex-direction:column;}
+    aside{width:100%;flex-direction:row;overflow-x:auto;}
+    aside .logo{display:none;}
+    nav{flex-direction:row;padding:8px;}
+    nav button{white-space:nowrap;padding:8px 14px;}
+    .logout{border-top:none;border-left:1px solid rgba(255,255,255,.1);}
+    main{padding:16px;}
+    .grid{grid-template-columns:1fr;}
+    .dash{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <h1 class="display">TALLER<span> VELASQUEZ</span></h1>
+    <p>Inicia sesion con tu cuenta del taller</p>
+    <input id="login-email" type="email" placeholder="correo@ejemplo.com" />
+    <input id="login-pass" type="password" placeholder="contrasena" />
+    <button onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="layout">
+    <aside>
+      <div class="logo display">TALLER<span> VELASQUEZ</span></div>
+      <nav>
+        <button data-tab="dashboard" class="active" onclick="setTab('dashboard')">Dashboard</button>
+        <button data-tab="ordenes" onclick="setTab('ordenes')">Ordenes</button>
+        <button data-tab="terminadas" onclick="setTab('terminadas')">Terminadas</button>
+        <button data-tab="clientes" onclick="setTab('clientes')">Clientes</button>
+        <button data-tab="inventario" onclick="setTab('inventario')">Inventario</button>
+      </nav>
+      <div class="logout"><button onclick="doLogout()">Cerrar sesion</button></div>
+    </aside>
+    <main>
+      <header class="page-head">
+        <div>
+          <h1 class="display" id="page-title">Dashboard</h1>
+          <p id="page-sub"></p>
+        </div>
+        <div id="header-actions"></div>
+      </header>
+      <div id="content"></div>
+    </main>
+  </div>
+</div>
+
+<div class="overlay" id="modal-orden">
+  <div class="modal">
+    <div class="modal-head"><h2 class="display">Nuevo ingreso de vehiculo</h2><button onclick="closeModal('modal-orden')">X</button></div>
+    <div class="field"><label>Cliente</label>
+      <div style="display:flex;gap:8px;">
+        <select id="f-cliente" onchange="refreshVehiculoOptions()" style="flex:1;"></select>
+        <button class="btn-primary" style="white-space:nowrap;" onclick="openNuevoClienteDesdeOrden()">+ Nuevo</button>
+      </div>
+    </div>
+    <div class="field"><label>Vehiculo</label>
+      <div style="display:flex;gap:8px;">
+        <select id="f-vehiculo" style="flex:1;"></select>
+        <button class="btn-primary" style="white-space:nowrap;" onclick="openNuevoVehiculoDesdeOrden()">+ Nuevo</button>
+      </div>
+    </div>
+    <div class="field"><label>Problema reportado</label><textarea id="f-problema" rows="3" placeholder="Ej: ruido en frenos al frenar"></textarea></div>
+    <div class="field"><label>Mecanico asignado (opcional)</label><input id="f-mecanico" placeholder="Nombre" /></div>
+    <div class="field"><label>Fotos</label>
+      <div class="photo-row" id="f-fotos-preview">
+        <button class="photo-add" onclick="document.getElementById('f-fotos-input').click()">+ Foto</button>
+      </div>
+      <input type="file" id="f-fotos-input" accept="image/*" multiple capture="environment" style="display:none" onchange="handleNewPhotos(event)" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-orden')">Cancelar</button>
+      <button class="btn-confirm" onclick="crearOrden()">Crear orden</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-detalle">
+  <div class="modal">
+    <div class="modal-head"><span class="mono" id="d-id" style="color:var(--muted);font-size:12px;"></span><button onclick="closeModal('modal-detalle')">X</button></div>
+    <h2 class="display" id="d-titulo" style="margin:0 0 2px;"></h2>
+    <p id="d-cliente" style="color:var(--muted);font-size:13px;margin:0 0 14px;"></p>
+    <div class="field"><label>Problema reportado</label><textarea id="d-problema" rows="3" onchange="actualizarOrden()"></textarea></div>
+    <div id="d-fecha-info" style="background:white;padding:14px;border-radius:8px;margin-bottom:14px;font-size:13px;"></div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;">
+      <div class="field" style="flex:1;margin-bottom:0;"><label>Estado</label>
+        <select id="d-estado" onchange="actualizarOrden()">
+          <option value="pendiente">Pendiente</option>
+          <option value="proceso">En proceso</option>
+          <option value="terminado">Terminado</option>
+        </select>
+      </div>
+      <div class="field" style="flex:1;margin-bottom:0;"><label>Mecanico</label>
+        <input id="d-mecanico" onchange="actualizarOrden()" />
+      </div>
+    </div>
+    <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;">FOTOS</label>
+    <div class="photo-row" id="d-fotos">
+      <button class="photo-add" onclick="document.getElementById('d-fotos-input').click()">+ Foto</button>
+    </div>
+    <input type="file" id="d-fotos-input" accept="image/*" multiple capture="environment" style="display:none" onchange="handleDetallePhotos(event)" />
+    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button id="btn-proceso" style="flex:1;min-width:100px;padding:11px;border:none;border-radius:6px;font-size:13px;font-weight:600;background:#F2B705;color:#1C1E22;cursor:pointer;" onclick="cambiarEstado('proceso')">En proceso</button>
+      <button id="btn-terminado" style="flex:1;min-width:100px;padding:11px;border:none;border-radius:6px;font-size:13px;font-weight:600;background:#16A34A;color:white;cursor:pointer;" onclick="cambiarEstado('terminado')">Terminar</button>
+      <button id="btn-pendiente" style="flex:1;min-width:100px;padding:11px;border:none;border-radius:6px;font-size:13px;font-weight:600;background:#8A8F98;color:white;cursor:pointer;" onclick="cambiarEstado('pendiente')">Pendiente</button>
+    </div>
+    <div style="margin-top:10px;">
+      <button style="width:100%;padding:11px;border:2px solid #dc3545;border-radius:6px;font-size:14px;color:#dc3545;background:white;cursor:pointer;font-weight:600;" onclick="eliminarOrden()">Eliminar esta orden</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-cliente">
+  <div class="modal">
+    <div class="modal-head"><h2 class="display">Nuevo Cliente</h2><button onclick="closeModal('modal-cliente')">X</button></div>
+    <div class="field"><label>Nombre completo</label><input id="nc-nombre" placeholder="Ej: Juan Perez" /></div>
+    <div class="field"><label>Telefono (opcional)</label><input id="nc-telefono" placeholder="Ej: 5512-3344" /></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-cliente')">Cancelar</button>
+      <button class="btn-confirm" onclick="crearCliente()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-vehiculo">
+  <div class="modal">
+    <div class="modal-head"><h2 class="display">Nuevo Vehiculo</h2><button onclick="closeModal('modal-vehiculo')">X</button></div>
+    <div class="field"><label>Marca</label><input id="nv-marca" placeholder="Ej: Toyota" /></div>
+    <div class="field"><label>Modelo</label><input id="nv-modelo" placeholder="Ej: Corolla" /></div>
+    <div class="field"><label>Ano</label><input id="nv-anio" placeholder="Ej: 2020" /></div>
+    <div class="field"><label>Placa</label><input id="nv-placa" placeholder="Ej: P-123ABC" style="text-transform:uppercase;" /></div>
+    <input type="hidden" id="nv-cliente-id" />
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-vehiculo')">Cancelar</button>
+      <button class="btn-confirm" onclick="crearVehiculo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-repuesto">
+  <div class="modal">
+    <div class="modal-head"><h2 class="display" id="nr-titulo">Nuevo Repuesto</h2><button onclick="closeModal('modal-repuesto')">X</button></div>
+    <div class="field"><label>Nombre</label><input id="nr-nombre" placeholder="Ej: Pastillas de freno" /></div>
+    <div class="field"><label>Cantidad actual</label><input id="nr-cantidad" type="number" value="0" min="0" /></div>
+    <div class="field"><label>Cantidad minima (alerta)</label><input id="nr-minimo" type="number" value="1" min="0" /></div>
+    <div class="field"><label>Unidad</label>
+      <select id="nr-unidad">
+        <option value="pza">Pieza (pza)</option>
+        <option value="juego">Juego</option>
+        <option value="litro">Litro</option>
+        <option value="kg">Kilogramo (kg)</option>
+        <option value="par">Par</option>
+        <option value="set">Set</option>
+      </select>
+    </div>
+    <input type="hidden" id="nr-edit-id" />
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-repuesto')">Cancelar</button>
+      <button class="btn-confirm" onclick="guardarRepuesto()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="offline-badge" id="offline-badge">MODO OFFLINE - Los cambios se sincronizan al reconectar</div>
+
+<!-- MODAL: FACTURA / RECIBO -->
+<div class="overlay" id="modal-factura">
+  <div class="modal" style="padding:0;background:transparent;box-shadow:none;">
+    <div id="factura-content"></div>
+    <div style="text-align:center;margin-top:12px;">
+      <button class="btn-cancel" onclick="closeModal('modal-factura')" style="padding:10px 24px;">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://zyxxurqrexbspnaumyjd.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_NCSWoBa_fhFyTOyLYiPzEQ_Y58nBA50";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const ESTADOS = {
+  pendiente: {label:"Pendiente", color:"#8A8F98"},
+  proceso: {label:"En proceso", color:"#F2B705"},
+  terminado: {label:"Terminado", color:"#16A34A"},
+};
+
+let clientes = [], vehiculos = [], ordenes = [], inventario = [], fotos = [];
+let tab = "dashboard";
+let nuevasFotosPendientes = [];
+let ordenActiva = null;
+let isOnline = navigator.onLine;
+
+// ---------- OFFLINE DB ----------
+const DB_NAME = "TallerOS_DB";
+const DB_VERSION = 1;
+let db = null;
+
+function openDB(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('clientes')) d.createObjectStore('clientes', {keyPath:'id'});
+      if (!d.objectStoreNames.contains('vehiculos')) d.createObjectStore('vehiculos', {keyPath:'id'});
+      if (!d.objectStoreNames.contains('ordenes')) d.createObjectStore('ordenes', {keyPath:'id'});
+      if (!d.objectStoreNames.contains('fotos')) d.createObjectStore('fotos', {keyPath:'id'});
+      if (!d.objectStoreNames.contains('inventario')) d.createObjectStore('inventario', {keyPath:'id'});
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(db); };
+    req.onerror = e => reject(e);
+  });
+}
+
+async function saveToLocal(store, data){
+  if (!db) return;
+  const tx = db.transaction(store, 'readwrite');
+  const s = tx.objectStore(store);
+  data.forEach(item => s.put(item));
+}
+
+async function clearLocal(store){
+  if (!db) return;
+  const tx = db.transaction(store, 'readwrite');
+  tx.objectStore(store).clear();
+}
+
+async function loadFromLocal(){
+  if (!db) return;
+  const read = store => new Promise(resolve => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => resolve([]);
+  });
+  clientes = await read('clientes');
+  vehiculos = await read('vehiculos');
+  ordenes = await read('ordenes');
+  fotos = await read('fotos');
+  inventario = await read('inventario');
+}
+
+// ---------- OFFLINE QUEUE ----------
+let offlineQueue = JSON.parse(localStorage.getItem('talleros_offline_queue') || '[]');
+
+function addToQueue(action){
+  offlineQueue.push({...action, timestamp: Date.now()});
+  localStorage.setItem('talleros_offline_queue', JSON.stringify(offlineQueue));
+}
+
+async function processQueue(){
+  if (!isOnline || !offlineQueue.length) return;
+  const queue = [...offlineQueue];
+  offlineQueue = [];
+  localStorage.setItem('talleros_offline_queue', '[]');
+  for (const item of queue){
+    try {
+      if (item.type === 'update'){
+        await sb.from(item.table).update(item.data).eq('id', item.id);
+      } else if (item.type === 'insert'){
+        await sb.from(item.table).insert(item.data);
+      } else if (item.type === 'delete'){
+        await sb.from(item.table).delete().eq('id', item.id);
+      }
+    } catch(e){
+      console.error('Error procesando cola offline:', e);
+    }
+  }
+}
+
+// ---------- AUTH ----------
+async function doLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-pass').value;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) { document.getElementById('login-error').textContent = "Correo o contrasena incorrectos."; return; }
+  onLoggedIn();
+}
+async function doLogout(){
+  await sb.auth.signOut();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+async function onLoggedIn(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  await cargarTodo();
+  render();
+}
+(async function initSession(){
+  await openDB();
+  const { data } = await sb.auth.getSession();
+  if (data.session) onLoggedIn();
+})();
+
+// ---------- DATA ----------
+async function cargarTodo(){
+  if (!isOnline){
+    await loadFromLocal();
+    return;
+  }
+  try {
+    const [c, v, o, f, i] = await Promise.all([
+      sb.from('clientes').select('*').order('nombre'),
+      sb.from('vehiculos').select('*'),
+      sb.from('ordenes').select('*').order('created_at', {ascending:false}),
+      sb.from('fotos').select('*'),
+      sb.from('inventario').select('*').order('nombre'),
+    ]);
+    clientes = c.data || []; vehiculos = v.data || []; ordenes = o.data || [];
+    fotos = f.data || []; inventario = i.data || [];
+    await saveToLocal('clientes', clientes);
+    await saveToLocal('vehiculos', vehiculos);
+    await saveToLocal('ordenes', ordenes);
+    await saveToLocal('fotos', fotos);
+    await saveToLocal('inventario', inventario);
+    await processQueue();
+  } catch(e){
+    await loadFromLocal();
+  }
+}
+const findCliente = id => clientes.find(c => c.id === id);
+const findVehiculo = id => vehiculos.find(v => v.id === id);
+const fotosDeOrden = id => fotos.filter(f => f.orden_id === id);
+const vehiculosDeCliente = id => vehiculos.filter(v => v.cliente_id === id);
+
+function diasTranscurridos(fecha){
+  if (!fecha) return 0;
+  const hoy = new Date();
+  const ing = new Date(fecha);
+  return Math.floor((hoy - ing) / (1000 * 60 * 60 * 24));
+}
+
+function formatoFecha(fecha){
+  if (!fecha) return '-';
+  return new Date(fecha).toLocaleDateString('es-GT', {day:'2-digit', month:'short', year:'numeric'});
+}
+
+// ---------- TABS ----------
+function setTab(t){
+  tab = t;
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  render();
+}
+
+function render(){
+  const titles = {dashboard:"Dashboard", ordenes:"Ordenes de trabajo", terminadas:"Ordenes terminadas", clientes:"Clientes y vehiculos", inventario:"Inventario de repuestos"};
+  document.getElementById('page-title').textContent = titles[tab];
+  const pendientes = ordenes.filter(o => o.estado === 'pendiente').length;
+  const enProceso = ordenes.filter(o => o.estado === 'proceso').length;
+  const terminadas = ordenes.filter(o => o.estado === 'terminado').length;
+  const stockBajo = inventario.filter(p => p.cantidad < p.minimo).length;
+  const subs = {
+    dashboard: `${pendientes} pendientes | ${enProceso} en proceso | ${terminadas} terminadas | ${stockBajo} stock bajo`,
+    ordenes: `${ordenes.filter(o=>o.estado!=='terminado').length} ordenes activas`,
+    terminadas: `${terminadas} ordenes completadas`,
+    clientes: `${clientes.length} clientes registrados`,
+    inventario: `${stockBajo} piezas con stock bajo`,
+  };
+  document.getElementById('page-sub').textContent = subs[tab] || '';
+
+  const actions = document.getElementById('header-actions');
+  actions.innerHTML = '';
+  if (tab === 'ordenes'){
+    actions.innerHTML = `
+      <input class="search-input" id="search-box" placeholder="Buscar placa, cliente, orden..." oninput="render()" style="margin-right:8px;">
+      <button class="btn-primary" onclick="openNuevaOrden()">+ Nuevo ingreso</button>`;
+  }
+  if (tab === 'terminadas'){
+    actions.innerHTML = `<input class="search-input" id="search-terminadas" placeholder="Buscar..." oninput="render()" style="margin-right:8px;">`;
+  }
+  if (tab === 'clientes'){
+    actions.innerHTML = `<button class="btn-primary" onclick="openNuevoCliente()">+ Nuevo cliente</button>`;
+  }
+  if (tab === 'inventario'){
+    actions.innerHTML = `
+      <input class="search-input" id="search-inv" placeholder="Buscar repuesto..." oninput="render()" style="margin-right:8px;">
+      <button class="btn-primary" onclick="openNuevoRepuesto()">+ Nuevo repuesto</button>`;
+  }
+
+  const content = document.getElementById('content');
+  if (tab === 'dashboard') content.innerHTML = renderDashboard();
+  if (tab === 'ordenes') content.innerHTML = renderOrdenes();
+  if (tab === 'terminadas') content.innerHTML = renderTerminadas();
+  if (tab === 'clientes') content.innerHTML = renderClientes();
+  if (tab === 'inventario') content.innerHTML = renderInventario();
+}
+
+// ---------- DASHBOARD ----------
+function renderDashboard(){
+  const total = ordenes.length;
+  const pendientes = ordenes.filter(o => o.estado === 'pendiente').length;
+  const enProceso = ordenes.filter(o => o.estado === 'proceso').length;
+  const terminadas = ordenes.filter(o => o.estado === 'terminado').length;
+  const stockBajo = inventario.filter(p => p.cantidad < p.minimo).length;
+  const totalRepuestos = inventario.reduce((s, p) => s + p.cantidad, 0);
+
+  const ordenesAntiguas = ordenes.filter(o => o.estado !== 'terminado' && diasTranscurridos(o.fecha_ingreso) > 3);
+
+  let html = `<div class="dash">
+    <div class="dash-card"><div class="num">${total}</div><div class="label">Total ordenes</div></div>
+    <div class="dash-card"><div class="num" style="color:var(--muted);">${pendientes}</div><div class="label">Pendientes</div></div>
+    <div class="dash-card"><div class="num" style="color:#F2B705;">${enProceso}</div><div class="label">En proceso</div></div>
+    <div class="dash-card"><div class="num" style="color:var(--green);">${terminadas}</div><div class="label">Terminadas</div></div>
+    <div class="dash-card"><div class="num" style="color:${stockBajo?'var(--orange)':'var(--ink)'};">${stockBajo}</div><div class="label">Stock bajo</div></div>
+    <div class="dash-card"><div class="num">${totalRepuestos}</div><div class="label">Total repuestos</div></div>
+  </div>`;
+
+  if (ordenesAntiguas.length){
+    html += `<h3 class="display" style="margin:0 0 14px;color:var(--orange);">Alertas - Ordenes con mas de 3 dias</h3>
+    <div class="grid">${ordenesAntiguas.map(o => {
+      const cli = findCliente(o.cliente_id), veh = findVehiculo(o.vehiculo_id);
+      const dias = diasTranscurridos(o.fecha_ingreso);
+      return `<div style="background:white;border-radius:10px;padding:16px;border-left:4px solid var(--orange);">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong>${veh?.marca||''} ${veh?.modelo||''}</strong>
+          <span class="mono" style="font-size:12px;color:var(--muted);">${o.id}</span>
+        </div>
+        <p style="margin:4px 0;font-size:13px;color:var(--muted);">${cli?.nombre||''} - ${veh?.placa||''}</p>
+        <p style="margin:4px 0;font-size:12px;color:var(--orange);font-weight:600;">${dias} dias en taller</p>
+      </div>`;
+    }).join('')}</div>`;
+  }
+
+  return html;
+}
+
+// ---------- ORDENES ----------
+function renderOrdenes(){
+  const search = (document.getElementById('search-box')?.value || '').toLowerCase();
+  const list = ordenes.filter(o => {
+    if (o.estado === 'terminado') return false;
+    const cli = findCliente(o.cliente_id), veh = findVehiculo(o.vehiculo_id);
+    const hay = `${o.id} ${cli?.nombre||''} ${veh?.placa||''} ${veh?.marca||''} ${veh?.modelo||''} ${o.problema||''}`.toLowerCase();
+    return hay.includes(search);
+  });
+  if (!list.length) return `<div class="empty">No hay ordenes activas.</div>`;
+  return `<div class="grid">${list.map(o => {
+    const cli = findCliente(o.cliente_id), veh = findVehiculo(o.vehiculo_id);
+    const est = ESTADOS[o.estado] || ESTADOS.pendiente;
+    const nFotos = fotosDeOrden(o.id).length;
+    const dias = o.estado !== 'terminado' ? diasTranscurridos(o.fecha_ingreso) : 0;
+    return `
+      <button class="orden-card" onclick="abrirDetalle('${o.id}')">
+        <div class="hole"></div>
+        <div class="top-row">
+          <span class="mono" style="font-size:11px;color:var(--muted);">${o.id}</span>
+          <span class="badge" style="background:${est.color}20;color:${est.color};">${est.label}</span>
+        </div>
+        <h3>${veh?.marca||''} ${veh?.modelo||''}</h3>
+        <p class="placa mono">${veh?.placa||''} - ${veh?.anio||''}</p>
+        <p class="problema">${o.problema||''}</p>
+        ${dias > 0 ? `<div class="dias">${dias} dia(s) en taller</div>` : ''}
+        <div class="bottom-row"><span>${cli?.nombre||''}</span>${nFotos?`<span>Fotos ${nFotos}</span>`:''}</div>
+      </button>`;
+  }).join('')}</div>`;
+}
+
+// ---------- TERMINADAS ----------
+function renderTerminadas(){
+  const search = (document.getElementById('search-terminadas')?.value || '').toLowerCase();
+  const list = ordenes.filter(o => {
+    if (o.estado !== 'terminado') return false;
+    const cli = findCliente(o.cliente_id), veh = findVehiculo(o.vehiculo_id);
+    const hay = `${o.id} ${cli?.nombre||''} ${veh?.placa||''} ${veh?.marca||''} ${veh?.modelo||''}`.toLowerCase();
+    return hay.includes(search);
+  });
+  if (!list.length) return `<div class="empty">No hay ordenes terminadas.</div>`;
+  return `<div class="grid">${list.map(o => {
+    const cli = findCliente(o.cliente_id), veh = findVehiculo(o.vehiculo_id);
+    return `
+      <button class="orden-card" onclick="abrirFactura('${o.id}')" style="border-left:4px solid var(--green);">
+        <div class="hole" style="background:var(--green);"></div>
+        <div class="top-row">
+          <span class="mono" style="font-size:11px;color:var(--muted);">${o.id}</span>
+          <span class="badge" style="background:#16A34A20;color:#16A34A;">TERMINADO</span>
+        </div>
+        <h3>${veh?.marca||''} ${veh?.modelo||''}</h3>
+        <p class="placa mono">${veh?.placa||''} - ${veh?.anio||''}</p>
+        <div class="bottom-row"><span>${cli?.nombre||''}</span><span>${formatoFecha(o.fecha_salida)}</span></div>
+      </button>`;
+  }).join('')}</div>`;
+}
+
+// ---------- FACTURA / RECIBO ----------
+function abrirFactura(id){
+  const o = ordenes.find(x => x.id === id);
+  if (!o) return;
+  const cli = findCliente(o.cliente_id), veh = findVehiculo(o.vehiculo_id);
+  const fechaEnt = formatoFecha(o.fecha_salida || o.created_at);
+  const dias = diasTranscurridos(o.fecha_ingreso);
+  document.getElementById('factura-content').innerHTML = `
+    <div class="factura">
+      <h2>TALLER VELASQUEZ</h2>
+      <p class="sub">Servicio de Mecanica Automotriz</p>
+      <div class="linea"></div>
+      <div class="row"><span>Recibo:</span><b>${o.id}</b></div>
+      <div class="row"><span>Fecha entrada:</span><b>${formatoFecha(o.fecha_ingreso)}</b></div>
+      <div class="row"><span>Fecha salida:</span><b>${fechaEnt}</b></div>
+      <div class="row"><span>Dias en taller:</span><b>${dias}</b></div>
+      <div class="linea"></div>
+      <div class="row"><span>Cliente:</span><b>${cli?.nombre||'-'}</b></div>
+      <div class="row"><span>Telefono:</span><b>${cli?.telefono||'-'}</b></div>
+      <div class="linea"></div>
+      <div class="row"><span>Vehiculo:</span><b>${veh?.marca||''} ${veh?.modelo||''}</b></div>
+      <div class="row"><span>Placa:</span><b>${veh?.placa||''}</b></div>
+      <div class="row"><span>Ano:</span><b>${veh?.anio||''}</b></div>
+      <div class="linea"></div>
+      <p style="margin:8px 0 2px;font-weight:600;">PROBLEMA:</p>
+      <p style="margin:0;font-size:11px;">${o.problema||'-'}</p>
+      <div class="linea"></div>
+      <div class="row"><span>Mecanico:</span><b>${o.mecanico||'-'}</b></div>
+      <div class="row"><span>Estado:</span><b>TERMINADO</b></div>
+      <div class="linea"></div>
+      <p class="sub" style="margin-top:12px;">Gracias por su preferencia</p>
+      <p class="sub">Taller Velasquez</p>
+    </div>`;
+  document.getElementById('modal-factura').classList.add('show');
+}
+
+// ---------- CLIENTES ----------
+function renderClientes(){
+  return clientes.map(c => `
+    <div class="cliente-card">
+      <div class="row">
+        <input class="editable-name" value="${c.nombre}" onblur="actualizarClienteNombre('${c.id}', this.value)" />
+        <button onclick="eliminarCliente('${c.id}', '${c.nombre.replace(/'/g,"\\'")}')" style="background:none;border:none;color:#dc3545;font-size:18px;cursor:pointer;padding:0 0 0 8px;" title="Eliminar cliente">X</button>
+      </div>
+      <p class="mono" style="color:var(--muted);font-size:12px;margin:2px 0 0;">${c.telefono||''}</p>
+      ${vehiculosDeCliente(c.id).map(v => `
+        <div class="veh-row">
+          <span>${v.marca} ${v.modelo} - ${v.anio}</span>
+          <span class="placa-tag mono">${v.placa}</span>
+          <button onclick="eliminarVehiculo('${v.id}', '${v.marca} ${v.modelo}')" style="background:none;border:none;color:#dc3545;font-size:14px;cursor:pointer;" title="Eliminar vehiculo">X</button>
+        </div>`).join('')}
+      <button class="btn-primary" style="margin-top:10px;font-size:12px;padding:6px 12px;" onclick="openNuevoVehiculo('${c.id}')">+ Agregar vehiculo</button>
+    </div>`).join('') || `<div class="empty">Aun no hay clientes.<br><br><button class="btn-primary" onclick="openNuevoCliente()">+ Crear primer cliente</button></div>`;
+}
+
+// ---------- INVENTARIO ----------
+function renderInventario(){
+  const search = (document.getElementById('search-inv')?.value || '').toLowerCase();
+  const list = inventario.filter(p => p.nombre.toLowerCase().includes(search));
+  if (!list.length) return `<div class="empty">No hay repuestos que coincidan.</div>`;
+  return `<div class="inv-table">${list.map(p => {
+    const bajo = p.cantidad < p.minimo;
+    return `
+      <div class="inv-row" style="flex-wrap:wrap;">
+        <div class="nombre" style="flex:1;min-width:150px;">
+          ${p.nombre}
+          <div class="minimo">minimo: ${p.minimo} ${p.unidad}</div>
+        </div>
+        ${bajo ? '<span title="Stock bajo" style="color:var(--orange);font-size:12px;font-weight:600;">BAJO</span>' : ''}
+        <input class="cantidad" type="number" value="${p.cantidad}" style="color:${bajo?'var(--orange)':'var(--ink)'}"
+          onchange="actualizarStock('${p.id}', this.value)" />
+        <button onclick="openEditarRepuesto('${p.id}')" style="background:none;border:1px solid #ddd;border-radius:5px;padding:4px 8px;font-size:12px;color:var(--muted);cursor:pointer;">Editar</button>
+        <button onclick="eliminarRepuesto('${p.id}', '${p.nombre.replace(/'/g,"\\'")}')" style="background:none;border:1px solid #f5c6cb;border-radius:5px;padding:4px 8px;font-size:12px;color:#dc3545;cursor:pointer;">X</button>
+      </div>`;
+  }).join('')}</div>`;
+}
+
+// ---------- CLIENTES CRUD ----------
+function openNuevoCliente(){
+  document.getElementById('nc-nombre').value = '';
+  document.getElementById('nc-telefono').value = '';
+  document.getElementById('modal-cliente').classList.add('show');
+}
+async function actualizarClienteNombre(id, nombre){
+  if (!nombre.trim()) return;
+  if (isOnline){
+    await sb.from('clientes').update({ nombre }).eq('id', id);
+  } else {
+    addToQueue({type:'update', table:'clientes', id, data:{nombre}});
+  }
+  const c = findCliente(id); if (c) c.nombre = nombre;
+  await saveToLocal('clientes', clientes);
+}
+async function eliminarCliente(id, nombre){
+  const ordenesDelCliente = ordenes.filter(o => o.cliente_id === id);
+  let msg = `Eliminar al cliente "${nombre}"?`;
+  if (ordenesDelCliente.length){
+    msg += `\n\nTiene ${ordenesDelCliente.length} orden(es) asociada(s). Estas tambien seran eliminadas.`;
+  }
+  if (!confirm(msg)) return;
+  if (isOnline){
+    for (const o of ordenesDelCliente){
+      await sb.from('fotos').delete().eq('orden_id', o.id);
+      await sb.from('ordenes').delete().eq('id', o.id);
+    }
+    await sb.from('vehiculos').delete().eq('cliente_id', id);
+    const { error } = await sb.from('clientes').delete().eq('id', id);
+    if (error){ alert('Error: ' + error.message); return; }
+  } else {
+    for (const o of ordenesDelCliente){
+      addToQueue({type:'delete', table:'fotos', id:o.id});
+      addToQueue({type:'delete', table:'ordenes', id:o.id});
+    }
+    addToQueue({type:'delete', table:'vehiculos', id});
+    addToQueue({type:'delete', table:'clientes', id});
+  }
+  await cargarTodo();
+  render();
+}
+async function eliminarVehiculo(id, nombre){
+  if (!confirm(`Eliminar el vehiculo "${nombre}"?`)) return;
+  if (isOnline){
+    const { error } = await sb.from('vehiculos').delete().eq('id', id);
+    if (error){ alert('Error: ' + error.message); return; }
+  } else {
+    addToQueue({type:'delete', table:'vehiculos', id});
+  }
+  await cargarTodo();
+  render();
+}
+
+// ---------- VEHICULOS CRUD ----------
+function openNuevoVehiculo(clienteId){
+  document.getElementById('nv-cliente-id').value = clienteId;
+  document.getElementById('nv-marca').value = '';
+  document.getElementById('nv-modelo').value = '';
+  document.getElementById('nv-anio').value = '';
+  document.getElementById('nv-placa').value = '';
+  document.getElementById('modal-vehiculo').classList.add('show');
+}
+
+// ---------- CREAR DESDE MODAL DE ORDEN ----------
+function openNuevoClienteDesdeOrden(){
+  document.getElementById('nc-nombre').value = '';
+  document.getElementById('nc-telefono').value = '';
+  document.getElementById('modal-cliente').classList.add('show');
+}
+async function crearCliente(){
+  const nombre = document.getElementById('nc-nombre').value.trim();
+  const telefono = document.getElementById('nc-telefono').value.trim();
+  if (!nombre){ alert('Escribe el nombre del cliente.'); return; }
+  if (isOnline){
+    const { error } = await sb.from('clientes').insert({ nombre, telefono });
+    if (error){ alert('Error al guardar: ' + error.message + '\n\nEjecuta el SQL de actualizacion en Supabase.'); return; }
+  } else {
+    addToQueue({type:'insert', table:'clientes', data:{id:crypto.randomUUID(), nombre, telefono}});
+  }
+  await cargarTodo();
+  closeModal('modal-cliente');
+  const selectCliente = document.getElementById('f-cliente');
+  if (selectCliente){
+    selectCliente.innerHTML = clientes.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+    const nuevo = clientes.find(c => c.nombre === nombre);
+    if (nuevo) selectCliente.value = nuevo.id;
+    refreshVehiculoOptions();
+  } else {
+    render();
+  }
+}
+function openNuevoVehiculoDesdeOrden(){
+  const clienteId = document.getElementById('f-cliente').value;
+  if (!clienteId){ alert('Primero selecciona un cliente.'); return; }
+  document.getElementById('nv-cliente-id').value = clienteId;
+  document.getElementById('nv-marca').value = '';
+  document.getElementById('nv-modelo').value = '';
+  document.getElementById('nv-anio').value = '';
+  document.getElementById('nv-placa').value = '';
+  document.getElementById('modal-vehiculo').classList.add('show');
+}
+async function crearVehiculo(){
+  const cliente_id = document.getElementById('nv-cliente-id').value;
+  const marca = document.getElementById('nv-marca').value.trim();
+  const modelo = document.getElementById('nv-modelo').value.trim();
+  const anio = document.getElementById('nv-anio').value.trim();
+  const placa = document.getElementById('nv-placa').value.trim().toUpperCase();
+  if (!marca || !modelo || !placa){ alert('Completa marca, modelo y placa.'); return; }
+  if (isOnline){
+    const { error } = await sb.from('vehiculos').insert({ cliente_id, marca, modelo, anio, placa });
+    if (error){ alert('Error al guardar: ' + error.message); return; }
+  } else {
+    addToQueue({type:'insert', table:'vehiculos', data:{id:crypto.randomUUID(), cliente_id, marca, modelo, anio, placa}});
+  }
+  await cargarTodo();
+  closeModal('modal-vehiculo');
+  const selectVehiculo = document.getElementById('f-vehiculo');
+  if (selectVehiculo){
+    refreshVehiculoOptions();
+    const nuevo = vehiculos.find(v => v.placa === placa && v.cliente_id === cliente_id);
+    if (nuevo) selectVehiculo.value = nuevo.id;
+  } else {
+    render();
+  }
+}
+
+// ---------- INVENTARIO CRUD ----------
+async function actualizarStock(id, cantidad){
+  cantidad = parseInt(cantidad) || 0;
+  if (isOnline){
+    await sb.from('inventario').update({ cantidad }).eq('id', id);
+  } else {
+    addToQueue({type:'update', table:'inventario', id, data:{cantidad}});
+  }
+  const p = inventario.find(x => x.id === id); if (p) p.cantidad = cantidad;
+  await saveToLocal('inventario', inventario);
+  render();
+}
+function openNuevoRepuesto(){
+  document.getElementById('nr-titulo').textContent = 'Nuevo Repuesto';
+  document.getElementById('nr-nombre').value = '';
+  document.getElementById('nr-cantidad').value = 0;
+  document.getElementById('nr-minimo').value = 1;
+  document.getElementById('nr-unidad').value = 'pza';
+  document.getElementById('nr-edit-id').value = '';
+  document.getElementById('modal-repuesto').classList.add('show');
+}
+function openEditarRepuesto(id){
+  const p = inventario.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('nr-titulo').textContent = 'Editar Repuesto';
+  document.getElementById('nr-nombre').value = p.nombre;
+  document.getElementById('nr-cantidad').value = p.cantidad;
+  document.getElementById('nr-minimo').value = p.minimo;
+  document.getElementById('nr-unidad').value = p.unidad;
+  document.getElementById('nr-edit-id').value = id;
+  document.getElementById('modal-repuesto').classList.add('show');
+}
+async function guardarRepuesto(){
+  const id = document.getElementById('nr-edit-id').value;
+  const nombre = document.getElementById('nr-nombre').value.trim();
+  const cantidad = parseInt(document.getElementById('nr-cantidad').value) || 0;
+  const minimo = parseInt(document.getElementById('nr-minimo').value) || 0;
+  const unidad = document.getElementById('nr-unidad').value;
+  if (!nombre){ alert('Escribe el nombre del repuesto.'); return; }
+  if (id){
+    if (isOnline){
+      await sb.from('inventario').update({ nombre, cantidad, minimo, unidad }).eq('id', id);
+    } else {
+      addToQueue({type:'update', table:'inventario', id, data:{nombre, cantidad, minimo, unidad}});
+    }
+  } else {
+    const newId = crypto.randomUUID();
+    if (isOnline){
+      await sb.from('inventario').insert({ nombre, cantidad, minimo, unidad });
+    } else {
+      addToQueue({type:'insert', table:'inventario', data:{id:newId, nombre, cantidad, minimo, unidad}});
+    }
+  }
+  await cargarTodo();
+  closeModal('modal-repuesto');
+  render();
+}
+async function eliminarRepuesto(id, nombre){
+  if (!confirm(`Eliminar "${nombre}" del inventario?`)) return;
+  if (isOnline){
+    await sb.from('inventario').delete().eq('id', id);
+  } else {
+    addToQueue({type:'delete', table:'inventario', id});
+  }
+  await cargarTodo();
+  render();
+}
+
+// ---------- ORDENES CRUD ----------
+function openNuevaOrden(){
+  nuevasFotosPendientes = [];
+  document.getElementById('f-cliente').innerHTML = clientes.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+  refreshVehiculoOptions();
+  document.getElementById('f-problema').value = '';
+  document.getElementById('f-mecanico').value = '';
+  renderFotosPreview('f-fotos-preview', nuevasFotosPendientes, 'f');
+  document.getElementById('modal-orden').classList.add('show');
+}
+function refreshVehiculoOptions(){
+  const cid = document.getElementById('f-cliente').value;
+  document.getElementById('f-vehiculo').innerHTML = vehiculosDeCliente(cid).map(v => `<option value="${v.id}">${v.marca} ${v.modelo} - ${v.placa}</option>`).join('');
+}
+function handleNewPhotos(e){
+  Array.from(e.target.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => { nuevasFotosPendientes.push({file, dataUrl: ev.target.result}); renderFotosPreview('f-fotos-preview', nuevasFotosPendientes, 'f'); };
+    reader.readAsDataURL(file);
+  });
+}
+function renderFotosPreview(containerId, arr, prefix){
+  const el = document.getElementById(containerId);
+  el.innerHTML = arr.map((p,i) => `<img class="photo-thumb" src="${p.dataUrl}">`).join('') +
+    `<button class="photo-add" onclick="document.getElementById('${prefix}-fotos-input').click()">+ Foto</button>`;
+}
+async function subirFoto(file, ordenId){
+  const path = `${ordenId}/${Date.now()}-${file.name}`;
+  const { error } = await sb.storage.from('fotos-ordenes').upload(path, file);
+  if (error) { console.error(error); return null; }
+  const { data } = sb.storage.from('fotos-ordenes').getPublicUrl(path);
+  return data.publicUrl;
+}
+async function crearOrden(){
+  const cliente_id = document.getElementById('f-cliente').value;
+  const vehiculo_id = document.getElementById('f-vehiculo').value;
+  const problema = document.getElementById('f-problema').value.trim();
+  const mecanico = document.getElementById('f-mecanico').value.trim() || 'Sin asignar';
+  if (!cliente_id || !vehiculo_id || !problema) { alert('Completa cliente, vehiculo y problema.'); return; }
+  const id = 'OT-' + String(1000 + Math.floor(Math.random()*8999)).padStart(4,'0');
+  const ahora = new Date().toISOString();
+  const ordenData = { id, cliente_id, vehiculo_id, problema, mecanico, estado: 'pendiente', fecha_ingreso: ahora, fecha_salida: null };
+  if (isOnline){
+    const { error } = await sb.from('ordenes').insert(ordenData);
+    if (error){ alert('Error al crear orden: ' + error.message); return; }
+  } else {
+    addToQueue({type:'insert', table:'ordenes', data:ordenData});
+  }
+  for (const p of nuevasFotosPendientes){
+    if (isOnline){
+      const url = await subirFoto(p.file, id);
+      if (url) await sb.from('fotos').insert({ orden_id: id, url });
+    }
+  }
+  await cargarTodo();
+  closeModal('modal-orden');
+  render();
+}
+
+// ---------- DETALLE / EDITAR ORDEN ----------
+function abrirDetalle(id){
+  ordenActiva = ordenes.find(o => o.id === id);
+  const cli = findCliente(ordenActiva.cliente_id), veh = findVehiculo(ordenActiva.vehiculo_id);
+  document.getElementById('d-id').textContent = ordenActiva.id;
+  document.getElementById('d-titulo').textContent = `${veh?.marca||''} ${veh?.modelo||''} - ${veh?.placa||''}`;
+  document.getElementById('d-cliente').textContent = `${cli?.nombre||''} - ${cli?.telefono||''}`;
+  document.getElementById('d-problema').value = ordenActiva.problema || '';
+  document.getElementById('d-estado').value = ordenActiva.estado;
+  document.getElementById('d-mecanico').value = ordenActiva.mecanico;
+  const dias = ordenActiva.estado !== 'terminado' ? diasTranscurridos(ordenActiva.fecha_ingreso) : 0;
+  document.getElementById('d-fecha-info').innerHTML = `
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-weight:600;">Ingreso:</span><span>${formatoFecha(ordenActiva.fecha_ingreso)}</span>
+    </div>
+    ${ordenActiva.fecha_salida ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-weight:600;">Salida:</span><span>${formatoFecha(ordenActiva.fecha_salida)}</span>
+    </div>` : ''}
+    ${dias > 0 ? `<div style="color:var(--orange);font-weight:600;margin-top:4px;">${dias} dia(s) en taller</div>` : ''}
+  `;
+  renderDetalleFotos();
+  document.getElementById('modal-detalle').classList.add('show');
+  actualizarBotonesEstado();
+}
+function renderDetalleFotos(){
+  const list = fotosDeOrden(ordenActiva.id);
+  document.getElementById('d-fotos').innerHTML = list.map(f => `<img class="photo-thumb" src="${f.url}">`).join('') +
+    `<button class="photo-add" onclick="document.getElementById('d-fotos-input').click()">+ Foto</button>`;
+}
+async function actualizarOrden(){
+  const estado = document.getElementById('d-estado').value;
+  const mecanico = document.getElementById('d-mecanico').value.trim() || 'Sin asignar';
+  const problema = document.getElementById('d-problema').value.trim();
+  const updates = { estado, mecanico, problema };
+  if (estado === 'terminado' && ordenActiva.estado !== 'terminado'){
+    updates.fecha_salida = new Date().toISOString();
+  }
+  if (isOnline){
+    const { error } = await sb.from('ordenes').update(updates).eq('id', ordenActiva.id);
+    if (error){ alert('Error al guardar: ' + error.message); return; }
+  } else {
+    addToQueue({type:'update', table:'ordenes', id:ordenActiva.id, data:updates});
+  }
+  Object.assign(ordenActiva, updates);
+  const o = ordenes.find(x => x.id === ordenActiva.id); if (o) Object.assign(o, updates);
+  await saveToLocal('ordenes', ordenes);
+  actualizarBotonesEstado();
+}
+
+function actualizarBotonesEstado(){
+  if (!ordenActiva) return;
+  const btnProceso = document.getElementById('btn-proceso');
+  const btnTerminado = document.getElementById('btn-terminado');
+  const btnPendiente = document.getElementById('btn-pendiente');
+  const reset = (btn) => { btn.style.opacity = '1'; btn.style.transform = 'scale(1)'; };
+  reset(btnProceso); reset(btnTerminado); reset(btnPendiente);
+  if (ordenActiva.estado === 'proceso'){
+    btnProceso.style.opacity = '1'; btnProceso.style.border = '3px solid #1C1E22';
+    btnTerminado.style.opacity = '0.5'; btnTerminado.style.border = 'none';
+    btnPendiente.style.opacity = '0.5'; btnPendiente.style.border = 'none';
+  } else if (ordenActiva.estado === 'terminado'){
+    btnTerminado.style.opacity = '1'; btnTerminado.style.border = '3px solid #1C1E22';
+    btnProceso.style.opacity = '0.5'; btnProceso.style.border = 'none';
+    btnPendiente.style.opacity = '0.5'; btnPendiente.style.border = 'none';
+  } else {
+    btnPendiente.style.opacity = '1'; btnPendiente.style.border = '3px solid #1C1E22';
+    btnProceso.style.opacity = '0.5'; btnProceso.style.border = 'none';
+    btnTerminado.style.opacity = '0.5'; btnTerminado.style.border = 'none';
+  }
+}
+
+async function cambiarEstado(nuevoEstado){
+  if (!ordenActiva) return;
+  const updates = { estado: nuevoEstado };
+  if (nuevoEstado === 'terminado' && ordenActiva.estado !== 'terminado'){
+    updates.fecha_salida = new Date().toISOString();
+  }
+  if (isOnline){
+    const { error } = await sb.from('ordenes').update(updates).eq('id', ordenActiva.id);
+    if (error){ alert('Error: ' + error.message); return; }
+  } else {
+    addToQueue({type:'update', table:'ordenes', id:ordenActiva.id, data:updates});
+  }
+  Object.assign(ordenActiva, updates);
+  const o = ordenes.find(x => x.id === ordenActiva.id); if (o) Object.assign(o, updates);
+  await saveToLocal('ordenes', ordenes);
+  document.getElementById('d-estado').value = nuevoEstado;
+  actualizarBotonesEstado();
+  render();
+}
+async function handleDetallePhotos(e){
+  for (const file of Array.from(e.target.files)){
+    if (isOnline){
+      const url = await subirFoto(file, ordenActiva.id);
+      if (url){
+        await sb.from('fotos').insert({ orden_id: ordenActiva.id, url });
+        fotos.push({ orden_id: ordenActiva.id, url });
+      }
+    }
+  }
+  renderDetalleFotos();
+  render();
+}
+
+function closeModal(id){
+  document.getElementById(id).classList.remove('show');
+  if (id === 'modal-detalle') render();
+}
+
+// ---------- ELIMINAR ORDEN ----------
+async function eliminarOrden(){
+  if (!ordenActiva) return;
+  if (!confirm(`Eliminar la orden ${ordenActiva.id}?`)) return;
+  const id = ordenActiva.id;
+  if (isOnline){
+    await sb.from('fotos').delete().eq('orden_id', id);
+    const { error } = await sb.from('ordenes').delete().eq('id', id);
+    if (error){ alert('Error: ' + error.message); return; }
+  } else {
+    addToQueue({type:'delete', table:'ordenes', id});
+  }
+  await cargarTodo();
+  closeModal('modal-detalle');
+  render();
+}
+
+// ---------- ONLINE/OFFLINE ----------
+window.addEventListener('online', () => {
+  isOnline = true;
+  document.getElementById('offline-badge').classList.remove('show');
+  cargarTodo().then(() => render());
+});
+window.addEventListener('offline', () => {
+  isOnline = false;
+  document.getElementById('offline-badge').classList.add('show');
+});
+
+// ---------- SERVICE WORKER ----------
+if ('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
